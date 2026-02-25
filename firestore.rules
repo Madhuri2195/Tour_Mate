@@ -1,0 +1,83 @@
+/**
+ * Core Philosophy: This ruleset provides a public, read-only interface for browsing cities and homestays, while also securing user-specific data. The primary goal is to allow any user to view public data, but restrict writes and user profile access to authenticated owners.
+ *
+ * Data Structure: The data is organized into three independent, top-level collections:
+ *   - /cities/{cityId}: Publicly readable city information.
+ *   - /homestays/{homestayId}: Publicly readable homestay listings.
+ *   - /users/{userId}: Private user profile data, accessible only by the owner, with subcollections for bookings.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: `/cities` and `/homestays` are public for read operations (`get`, `list`).
+ * - User-Owned Profiles & Data: In the `/users` collection, users can only create, read, and update their own document, identified by their UID. This is enforced using the `isOwner` function. This ownership extends to subcollections like `homestayBookings`, `receivedHomestayBookings`, and `guideBookings`.
+ * - All Other Writes Disabled: Public collections are read-only. Users cannot delete their profiles or list other users.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if a user is authenticated.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper function to verify that the requesting user's UID matches the document ID.
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Allows public, read-only access to city information.
+     * @path        /cities/{cityId}
+     */
+    match /cities/{cityId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Allows public, read-only access to homestay listings.
+     * @path        /homestays/{homestayId}
+     */
+    match /homestays/{homestayId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Secures user profile data and their subcollections.
+     * @path        /users/{userId}
+     * @allow       create, get, update: If the user is signed in and is the owner of the document.
+     * @deny        list, delete: For all users to protect privacy and prevent data loss.
+     */
+    match /users/{userId} {
+      allow create, get, update: if isSignedIn() && isOwner(userId);
+      allow list, delete: if false;
+
+      /**
+       * @description Secures a user's (tourist's) own homestay bookings.
+       * @path        /users/{userId}/homestayBookings/{path=**}
+       */
+      match /homestayBookings/{path=**} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      /**
+       * @description Secures a host's received homestay bookings.
+       * @path        /users/{userId}/receivedHomestayBookings/{path=**}
+       */
+      match /receivedHomestayBookings/{path=**} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      /**
+       * @description Secures a user's guide bookings. The recursive wildcard `{path=**}` ensures
+       *              that the rule applies to both collection-level operations (like `list`) and
+       *              document-level operations (`get`, `create`, `update`, `delete`).
+       * @path        /users/{userId}/guideBookings/{path=**}
+       */
+      match /guideBookings/{path=**} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,110 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { MapPin, Menu } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useUser } from '@/firebase';
+
+
+export default function Page() {
+  const { user } = useUser();
+  const backgroundImage = PlaceHolderImages.find(p => p.id === 'background-image');
+  const imageUrl = backgroundImage?.imageUrl || 'https://picsum.photos/seed/bg/1920/1080';
+  const imageHint = backgroundImage?.imageHint || 'India travel';
+  const imageAlt = backgroundImage?.description || "A collage of famous landmarks in India.";
+
+  return (
+    <div className="relative h-screen w-screen text-white">
+      <Image
+        src={imageUrl}
+        alt={imageAlt}
+        fill
+        className="object-cover"
+        data-ai-hint={imageHint}
+        priority
+      />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="relative z-10 flex h-full flex-col">
+        <header className="p-4">
+          <div className="container mx-auto flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2">
+              <MapPin className="h-6 w-6 text-white" />
+              <span className="text-xl font-bold tracking-tight">
+                TourMate
+              </span>
+            </Link>
+            <nav className="hidden items-center gap-2 sm:flex">
+              {user ? (
+                 <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+                    <Link href="/profile">Dashboard</Link>
+                 </Button>
+              ) : (
+                <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+                  <Link href="/login">Login</Link>
+                </Button>
+              )}
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+                <Link href="#">About Us</Link>
+              </Button>
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10 hover:text-white">
+                <Link href="#">Contact</Link>
+              </Button>
+            </nav>
+            <div className="sm:hidden">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white">
+                    <Menu className="h-6 w-6" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right">
+                  <nav className="flex flex-col gap-4 pt-8">
+                     <Link href="/" className="flex items-center gap-2 mb-4">
+                      <MapPin className="h-6 w-6 text-primary" />
+                      <span className="text-xl font-bold tracking-tight">
+                        TourMate
+                      </span>
+                    </Link>
+                    {user ? (
+                      <Link href="/profile" className="text-lg">Dashboard</Link>
+                    ): (
+                      <Link href="/login" className="text-lg">Login</Link>
+                    )}
+                    <Link href="#" className="text-lg">About Us</Link>
+                    <Link href="#" className="text-lg">Contact</Link>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex flex-1 flex-col items-center justify-center text-center px-4">
+          <div className="space-y-6">
+            <h1 className="font-headline text-5xl font-extrabold tracking-tighter sm:text-7xl md:text-8xl">
+              TourMate
+            </h1>
+            <p className="mx-auto max-w-md text-lg text-white/80 sm:text-xl">
+              Where Travel Meets Comfort
+            </p>
+            <Button
+              asChild
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg"
+            >
+              <Link href="/explore">Explore with TourMate</Link>
+            </Button>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
